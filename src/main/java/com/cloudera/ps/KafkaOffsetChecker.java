@@ -45,10 +45,8 @@ public class KafkaOffsetChecker {
             System.out.println("Getting partition information for pattern:\t" + topicRegex);
             final List<TopicPartition> partitions = kafkaOffsetChecker.getPartitions(topicRegex);
 
-            System.out.println("Finding offsets for " + partitions.size() + " topics");
+            System.out.println("Finding offsets for " + partitions.size() + " topics...");
             final Map<TopicPartition, OffsetAndTimestamp> offsets = kafkaOffsetChecker.getOffsets(partitions, timestamp);
-
-            System.out.println("Earliest offsets after " + timestamp + ":");
             final List<String> results = new LinkedList<String>();
             for(Map.Entry<TopicPartition, OffsetAndTimestamp> entry : offsets.entrySet()) {
                 final String topic = entry.getKey().topic();
@@ -59,8 +57,9 @@ public class KafkaOffsetChecker {
                 }
                 results.add(topic + "-" + partition + ":\t" + offset);
             }
-
             Collections.sort(results);
+
+            System.out.println("Earliest offsets after " + timestamp + ":");
             for(String result : results) {
                 System.out.println(result);
             }
