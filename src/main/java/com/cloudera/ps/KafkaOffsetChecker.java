@@ -13,21 +13,20 @@ import java.util.regex.Pattern;
 
 public class KafkaOffsetChecker {
 
-    private Properties properties;
+    private final Properties properties = new Properties();
     public KafkaOffsetChecker(String bootstrapServers) {
-        properties = new Properties();
         properties.put("bootstrap.servers", bootstrapServers);
         properties.put("group.id", "cloudera-kafka-offset-checker");
         properties.put("key.deserializer", "org.apache.kafka.common.serialization.StringDeserializer");
         properties.put("value.deserializer", "org.apache.kafka.common.serialization.StringDeserializer");
     }
 
-    public static void main(String[] args) {
+    public static void main(final String[] args) {
         if(args.length < 2) {
             System.err.println("usage: KafkaOffsetChecker bootstrap:server timestamp [topic]");
             System.exit(1);
         } else {
-            String bootstrapServers = args[0];
+            final String bootstrapServers = args[0];
             long timestamp = 0L;
             try {
                 timestamp = Long.parseLong(args[1]);
@@ -41,35 +40,41 @@ public class KafkaOffsetChecker {
                 topicRegex = args[2];
             }
 
-            KafkaOffsetChecker kafkaOffsetChecker = new KafkaOffsetChecker(bootstrapServers);
+            final KafkaOffsetChecker kafkaOffsetChecker = new KafkaOffsetChecker(bootstrapServers);
 
             System.out.println("Getting partition information for pattern:\t" + topicRegex);
-            List<TopicPartition> partitions = kafkaOffsetChecker.getPartitions(topicRegex);
+            final List<TopicPartition> partitions = kafkaOffsetChecker.getPartitions(topicRegex);
 
             System.out.println("Finding offsets for " + partitions.size() + " topics");
-            Map<TopicPartition, OffsetAndTimestamp> offsets = kafkaOffsetChecker.getOffsets(partitions, timestamp);
+            final Map<TopicPartition, OffsetAndTimestamp> offsets = kafkaOffsetChecker.getOffsets(partitions, timestamp);
 
             System.out.println("Earliest offsets after " + timestamp + ":");
+            final List<String> results = new LinkedList<String>();
             for(Map.Entry<TopicPartition, OffsetAndTimestamp> entry : offsets.entrySet()) {
-                String topic = entry.getKey().topic();
-                String partition = String.valueOf(entry.getKey().partition());
+                final String topic = entry.getKey().topic();
+                final String partition = String.valueOf(entry.getKey().partition());
                 String offset = "null";
                 if(entry.getValue() != null) {
                     offset = String.valueOf(entry.getValue().offset());
                 }
-                System.out.println(topic + "-" + partition + ":\t" + offset);
+                results.add(topic + "-" + partition + ":\t" + offset);
+            }
+
+            Collections.sort(results);
+            for(String result : results) {
+                System.out.println(result);
             }
         }
     }
 
-    private List<TopicPartition> getPartitions(String regex) {
-        Pattern pattern = Pattern.compile(regex);
-        List<TopicPartition> result = new LinkedList<TopicPartition>();
-        KafkaConsumer<String, String> consumer = new KafkaConsumer<String, String>(properties);
+    private List<TopicPartition> getPartitions(final String regex) {
+        final Pattern pattern = Pattern.compile(regex);
+        final List<TopicPartition> result = new LinkedList<TopicPartition>();
+        final KafkaConsumer<String, String> consumer = new KafkaConsumer<String, String>(properties);
         try {
-            Map<String, List<PartitionInfo>> partitions = consumer.listTopics();
+            final Map<String, List<PartitionInfo>> partitions = consumer.listTopics();
             for(Map.Entry<String, List<PartitionInfo>> topic : partitions.entrySet()) {
-                Matcher m = pattern.matcher(topic.getKey());
+                final Matcher m = pattern.matcher(topic.getKey());
                 if (m.find()) {
                     for(PartitionInfo partition : topic.getValue()) {
                         result.add(new TopicPartition(topic.getKey(), partition.partition()));
@@ -82,14 +87,14 @@ public class KafkaOffsetChecker {
         return result;
     }
 
-    private Map<TopicPartition, OffsetAndTimestamp> getOffsets(List<TopicPartition> partitionList, long timestamp) {
-        Map<TopicPartition, Long> input = new HashMap<TopicPartition, Long>();
+    private Map<TopicPartition, OffsetAndTimestamp> getOffsets(final List<TopicPartition> partitionList, final long timestamp) {
+        final Map<TopicPartition, Long> input = new HashMap<TopicPartition, Long>();
         for(TopicPartition topicPartition : partitionList) {
             input.put(topicPartition, timestamp);
         }
 
-        KafkaConsumer<String, String> consumer = new KafkaConsumer<String, String>(properties);
         Map<TopicPartition, OffsetAndTimestamp> result = new HashMap<TopicPartition, OffsetAndTimestamp>();
+        final KafkaConsumer<String, String> consumer = new KafkaConsumer<String, String>(properties);
         try {
             result = consumer.offsetsForTimes(input);
         } finally {
