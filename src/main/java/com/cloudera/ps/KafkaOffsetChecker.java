@@ -86,20 +86,23 @@ public class KafkaOffsetChecker {
         return result;
     }
 
+    //Used to avoid timeouts on huge requests:
+    private int BATCH_SIZE = 1000;
     private Map<TopicPartition, OffsetAndTimestamp> getOffsets(final List<TopicPartition> partitionList, final long timestamp) {
-        final Map<TopicPartition, Long> input = new HashMap<TopicPartition, Long>();
-        for(TopicPartition topicPartition : partitionList) {
-            input.put(topicPartition, timestamp);
-        }
 
-        Map<TopicPartition, OffsetAndTimestamp> result = new HashMap<TopicPartition, OffsetAndTimestamp>();
         final KafkaConsumer<String, String> consumer = new KafkaConsumer<String, String>(properties);
-        try {
-            result = consumer.offsetsForTimes(input);
-        } finally {
-            consumer.close();
-        }
+        final Map<TopicPartition, OffsetAndTimestamp> result = new HashMap<TopicPartition, OffsetAndTimestamp>();
+        final Map<TopicPartition, Long> input = new HashMap<TopicPartition, Long>();
 
+        for(int i = 0; i < partitionList.size(); i++) {
+            input.put(partitionList.get(i), timestamp);
+            if(i % BATCH_SIZE == 0) {
+                result.putAll(consumer.offsetsForTimes(input));
+                input.clear();
+            }
+        }
+        result.putAll(consumer.offsetsForTimes(input));
+        consumer.close();
         return result;
     }
 }
