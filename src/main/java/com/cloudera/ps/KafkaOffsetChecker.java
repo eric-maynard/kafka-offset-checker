@@ -87,7 +87,7 @@ public class KafkaOffsetChecker {
     }
 
     //Used to avoid timeouts on huge requests:
-    private int BATCH_SIZE = 1000;
+    private final int BATCH_SIZE = 1000;
     private Map<TopicPartition, OffsetAndTimestamp> getOffsets(final List<TopicPartition> partitionList, final long timestamp) {
 
         final KafkaConsumer<String, String> consumer = new KafkaConsumer<String, String>(properties);
