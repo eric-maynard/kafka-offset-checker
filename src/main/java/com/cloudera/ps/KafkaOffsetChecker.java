@@ -54,7 +54,7 @@ public class KafkaOffsetChecker {
                 if(entry.getValue() != null) {
                     offset = String.valueOf(entry.getValue().offset());
                 }
-                results.add(topic + "-" + partition + ":\t" + offset);
+                results.add(topic + ":" + partition + "\t" + offset);
             }
             Collections.sort(results);
 
